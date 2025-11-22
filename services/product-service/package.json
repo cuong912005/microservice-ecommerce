@@ -1,0 +1,27 @@
+{
+  "name": "product-service",
+  "version": "1.0.0",
+  "description": "Product catalog management microservice",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": ["product", "microservice", "catalog"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "mongoose": "^8.5.3",
+    "ioredis": "^5.4.1",
+    "cloudinary": "^2.4.0",
+    "axios": "^1.7.5",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

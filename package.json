@@ -1,0 +1,22 @@
+﻿{
+  "name": "btl-ktpm-microservices",
+  "version": "1.0.0",
+  "description": "E-Commerce Microservices Architecture",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "docker-compose up",
+    "dev:build": "docker-compose up --build",
+    "down": "docker-compose down",
+    "logs": "docker-compose logs -f",
+    "clean": "docker-compose down -v",
+    "test": "echo \"Run tests from individual services\"",
+    "setup": "node scripts/setup.js"
+  },
+  "keywords": ["microservices", "ecommerce", "nodejs", "express"],
+  "author": "Your Team",
+  "license": "MIT"
+}

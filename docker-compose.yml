@@ -1,0 +1,457 @@
+﻿version: '3.8'
+
+services:
+  # ==================== INFRASTRUCTURE SERVICES ====================
+  
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=ecommerce
+    networks:
+      - microservices-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka - Message Broker for Event Streaming
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+    networks:
+      - microservices-network
+    healthcheck:
+      test: echo stat | nc localhost 2181
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: kafka-broker-api-versions --bootstrap-server localhost:9092
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # Kafka UI - Web interface for Kafka management
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - microservices-network
+
+  # Kafka Topics Initialization
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ['/bin/bash', '/scripts/init-kafka.sh']
+    volumes:
+      - ./scripts/init-kafka.sh:/scripts/init-kafka.sh:ro
+    networks:
+      - microservices-network
+    restart: on-failure
+
+  # ==================== MONITORING ====================
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - microservices-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - microservices-network
+    depends_on:
+      - prometheus
+
+  # ==================== API GATEWAY ====================
+  
+  # Kong Database (PostgreSQL)
+  kong-database:
+    image: postgres:15-alpine
+    container_name: kong-database
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_DB: kong
+      POSTGRES_PASSWORD: kong
+    volumes:
+      - kong-db-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kong"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kong Migration - Initialize database
+  kong-migration:
+    image: kong:3.3.0-alpine
+    container_name: kong-migration
+    command: kong migrations bootstrap
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+      KONG_PG_DATABASE: kong
+    networks:
+      - microservices-network
+    depends_on:
+      kong-database:
+        condition: service_healthy
+    restart: on-failure
+
+  # Kong API Gateway
+  kong:
+    image: kong:3.3.0-alpine
+    container_name: kong
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_ADMIN_GUI_URL: http://localhost:8002
+    ports:
+      - "8000:8000"  # Proxy HTTP
+      - "8443:8443"  # Proxy HTTPS
+      - "8001:8001"  # Admin API HTTP
+      - "8444:8444"  # Admin API HTTPS
+      - "8002:8002"  # Kong Manager (GUI)
+    volumes:
+      - ./kong.yml:/usr/local/kong/declarative/kong.yml:ro
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: on-failure
+
+  # ==================== MICROSERVICES ====================
+  
+  # Auth Service - Xác thực người dùng
+  auth-service:
+    build: ./services/auth-service
+    container_name: auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGO_URI=mongodb://mongodb:27017/auth_db
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_BROKERS=kafka:29092
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - ACCESS_TOKEN_SECRET=your-super-secret-jwt-key-change-in-production
+      - REFRESH_TOKEN_SECRET=your-super-secret-refresh-key-change-in-production
+      - JWT_ACCESS_EXPIRY=15m
+      - JWT_REFRESH_EXPIRY=7d
+      - GOOGLE_CLIENT_ID=your-google-client-id
+      - GOOGLE_CLIENT_SECRET=your-google-client-secret
+      - GITHUB_CLIENT_ID=your-github-client-id
+      - GITHUB_CLIENT_SECRET=your-github-client-secret
+    networks:
+      - microservices-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
+
+  # Product Service - Quản lý sản phẩm
+  product-service:
+    build: ./services/product-service
+    container_name: product-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - MONGO_URI=mongodb://mongodb:27017/products_db
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_BROKERS=kafka:29092
+      - CLOUDINARY_CLOUD_NAME=your-cloudinary-name
+      - CLOUDINARY_API_KEY=your-cloudinary-key
+      - CLOUDINARY_API_SECRET=your-cloudinary-secret
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    networks:
+      - microservices-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./services/product-service:/app
+      - /app/node_modules
+
+  # Payment Service - Xử lý thanh toán
+  payment-service:
+    build: ./services/payment-service
+    container_name: payment-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - MONGO_URI=mongodb://mongodb:27017/payments_db
+      - KAFKA_BROKERS=kafka:29092
+      - STRIPE_SECRET_KEY=your-stripe-secret-key
+      - STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
+      # Direct REST calls to other services
+      - ORDER_SERVICE_URL=http://order-service:3005
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    networks:
+      - microservices-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./services/payment-service:/app
+      - /app/node_modules
+
+  # Cart Service - Quản lý giỏ hàng
+  cart-service:
+    build: ./services/cart-service
+    container_name: cart-service
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - REDIS_URL=redis://redis:6379
+      - MONGO_URI=mongodb://mongodb:27017/carts_db
+      - KAFKA_BROKERS=kafka:29092
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    networks:
+      - microservices-network
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./services/cart-service:/app
+      - /app/node_modules
+
+  # Order Service - Quản lý đơn hàng
+  order-service:
+    build: ./services/order-service
+    container_name: order-service
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+      - PORT=3005
+      - MONGO_URI=mongodb://mongodb:27017/orders_db
+      - KAFKA_BROKERS=kafka:29092
+      # Direct REST calls
+      - CART_SERVICE_URL=http://cart-service:3004
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+      - PAYMENT_SERVICE_URL=http://payment-service:3003
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    networks:
+      - microservices-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./services/order-service:/app
+      - /app/node_modules
+
+  # Coupon Service - Quản lý mã giảm giá
+  coupon-service:
+    build: ./services/coupon-service
+    container_name: coupon-service
+    ports:
+      - "3008:3008"
+    environment:
+      - NODE_ENV=development
+      - PORT=3008
+      - MONGO_URI=mongodb://mongodb:27017/coupons_db
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_BROKERS=kafka:29092
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    networks:
+      - microservices-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./services/coupon-service:/app
+      - /app/node_modules
+
+  # Analytics Service - Thống kê & báo cáo
+  analytics-service:
+    build: ./services/analytics-service
+    container_name: analytics-service
+    ports:
+      - "3007:3007"
+    environment:
+      - NODE_ENV=development
+      - PORT=3007
+      - MONGO_URI=mongodb://mongodb:27017/analytics_db
+      - KAFKA_BROKERS=kafka:29092
+      # Call services directly for data aggregation
+      - ORDER_SERVICE_URL=http://order-service:3005
+      - PRODUCT_SERVICE_URL=http://product-service:3002
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    networks:
+      - microservices-network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./services/analytics-service:/app
+      - /app/node_modules
+
+  # ==================== BACKGROUND WORKER ====================
+  
+  # Worker Service - Xử lý async tasks (email, notifications, etc.)
+  worker-service:
+    build: ./services/worker-service
+    container_name: worker-service
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=development
+      - PORT=3006
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_GROUP_ID=worker-service-group
+      - MONGO_URI=mongodb://mongodb:27017/worker_db
+      # SendGrid configuration
+      - SENDGRID_API_KEY=your-sendgrid-api-key
+      - SENDGRID_FROM_EMAIL=noreply@ecommerce.com
+      - SENDGRID_FROM_NAME=E-Commerce Store
+      # Service URLs for fetching data
+      - ORDER_SERVICE_URL=http://order-service:3005
+      - AUTH_SERVICE_URL=http://auth-service:3001
+    networks:
+      - microservices-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - ./services/worker-service:/app
+      - /app/node_modules
+
+# ==================== NETWORKS ====================
+networks:
+  microservices-network:
+    driver: bridge
+
+# ==================== VOLUMES ====================
+volumes:
+  mongo-data:
+  redis-data:
+  zookeeper-data:
+  zookeeper-log:
+  kafka-data:
+  kong-db-data:
+  prometheus-data:
+  grafana-data:

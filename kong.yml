@@ -1,0 +1,188 @@
+_format_version: "3.0"
+_transform: true
+
+# ==================== SERVICES ====================
+
+services:
+  - name: auth-service
+    url: http://auth-service:3001
+    routes:
+      - name: auth-routes
+        paths:
+          - /api/auth
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+        protocols:
+          - http
+          - https
+
+  - name: product-service
+    url: http://product-service:3002
+    routes:
+      - name: product-routes
+        paths:
+          - /api/products
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+        protocols:
+          - http
+          - https
+
+  - name: payment-service
+    url: http://payment-service:3003
+    routes:
+      - name: payment-routes
+        paths:
+          - /api/payments
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+        protocols:
+          - http
+          - https
+
+  - name: cart-service
+    url: http://cart-service:3004
+    routes:
+      - name: cart-routes
+        paths:
+          - /api/cart
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+        protocols:
+          - http
+          - https
+
+  - name: order-service
+    url: http://order-service:3005
+    routes:
+      - name: order-routes
+        paths:
+          - /api/orders
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+        protocols:
+          - http
+          - https
+
+  - name: analytics-service
+    url: http://analytics-service:3007
+    routes:
+      - name: analytics-routes
+        paths:
+          - /api/analytics
+        strip_path: false
+        methods:
+          - GET
+          - POST
+        protocols:
+          - http
+          - https
+
+  - name: coupon-service
+    url: http://coupon-service:3008
+    routes:
+      - name: coupon-routes
+        paths:
+          - /api/coupons
+        strip_path: false
+        methods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+        protocols:
+          - http
+          - https
+
+# ==================== GLOBAL PLUGINS ====================
+
+plugins:
+  # CORS Plugin - Enable cross-origin requests from frontend
+  - name: cors
+    config:
+      origins:
+        - http://localhost:5173
+        - http://localhost:3000
+        - http://localhost:5000
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - Authorization
+        - X-Auth-Token
+      exposed_headers:
+        - X-Auth-Token
+      credentials: true
+      max_age: 3600
+      preflight_continue: false
+
+  # Rate Limiting Plugin - 100 requests per minute per consumer
+  - name: rate-limiting
+    config:
+      minute: 100
+      policy: local
+      fault_tolerant: true
+      hide_client_headers: false
+      redis_ssl: false
+      redis_ssl_verify: false
+      redis_timeout: 2000
+
+  # Request Size Limiting - Max 10MB for file uploads
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 10
+      size_unit: megabytes
+      require_content_length: false
+
+  # Request/Response Logging
+  - name: file-log
+    config:
+      path: /tmp/kong-requests.log
+      reopen: true
+
+# ==================== CONSUMERS (for rate limiting) ====================
+
+consumers:
+  - username: anonymous
+    custom_id: anonymous-user
+
+# Enable anonymous consumer for rate limiting on unauthenticated requests
+plugins:
+  - name: request-termination
+    enabled: false
