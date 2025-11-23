@@ -12,7 +12,7 @@ const authServiceClient = axios.create({
 // Validate user token with Auth Service
 export const validateToken = async (token) => {
 	try {
-		const response = await authServiceClient.get('/auth/validate-token', {
+		const response = await authServiceClient.get('/api/auth/validate-token', {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
