@@ -20,14 +20,18 @@ export const verifyAdmin = async (req, res, next) => {
 			});
 		}
 
-		// Check if user is admin
-		if (validationResult.user?.role !== "admin") {
+		
+		if (validationResult.role !== "admin") {
 			return res.status(403).json({
 				message: "Admin access required",
 			});
 		}
 
-		req.user = validationResult.user;
+		req.user = {
+			userId: validationResult.userId,
+			email: validationResult.email,
+			role: validationResult.role
+		};
 		next();
 	} catch (error) {
 		console.error("Admin verification error:", error);
@@ -58,7 +62,11 @@ export const verifyAuth = async (req, res, next) => {
 			});
 		}
 
-		req.user = validationResult.user;
+		req.user = {
+			userId: validationResult.userId,
+			email: validationResult.email,
+			role: validationResult.role
+		};
 		next();
 	} catch (error) {
 		console.error("Auth verification error:", error);
