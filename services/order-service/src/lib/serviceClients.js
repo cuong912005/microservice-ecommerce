@@ -47,7 +47,7 @@ const cartClient = createServiceClient(process.env.CART_SERVICE_URL);
 
 export const getCart = async (userId, token) => {
 	try {
-		const response = await cartClient.get(`/cart/${userId}`, {
+		const response = await cartClient.get(`/api/cart/${userId}`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -61,7 +61,7 @@ export const getCart = async (userId, token) => {
 
 export const clearCart = async (userId, token) => {
 	try {
-		const response = await cartClient.delete(`/cart/${userId}/clear`, {
+		const response = await cartClient.delete(`/api/cart/${userId}/clear`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
@@ -78,7 +78,7 @@ const productClient = createServiceClient(process.env.PRODUCT_SERVICE_URL);
 
 export const getProduct = async (productId) => {
 	try {
-		const response = await productClient.get(`/products/${productId}`);
+		const response = await productClient.get(`/api/products/${productId}`);
 		return response.data;
 	} catch (error) {
 		console.error(`Error fetching product ${productId}:`, error.message);
@@ -104,7 +104,7 @@ const paymentClient = createServiceClient(process.env.PAYMENT_SERVICE_URL);
 export const createPaymentSession = async (orderData, token) => {
 	try {
 		const response = await paymentClient.post(
-			"/payments/create-checkout-session",
+			"/api/payments/create-checkout-session",
 			orderData,
 			{
 				headers: {

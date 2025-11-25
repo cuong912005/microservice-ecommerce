@@ -44,7 +44,7 @@ export const authServiceClient = createServiceClient(AUTH_SERVICE_URL);
 // Validate token with Auth Service
 export const validateToken = async (token) => {
 	try {
-		const response = await authServiceClient.get("/auth/validate-token", {
+		const response = await authServiceClient.get("/api/auth/validate-token", {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},

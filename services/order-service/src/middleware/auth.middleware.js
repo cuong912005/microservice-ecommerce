@@ -2,14 +2,12 @@ import { validateToken } from "../lib/authClient.js";
 
 export const protectRoute = async (req, res, next) => {
 	try {
-		// Get token from Authorization header
-		const authHeader = req.headers.authorization;
+		// Get token from cookie or Authorization header
+		const token = req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
 		
-		if (!authHeader || !authHeader.startsWith("Bearer ")) {
+		if (!token) {
 			return res.status(401).json({ message: "Unauthorized - No token provided" });
 		}
-
-		const token = authHeader.split(" ")[1];
 
 		// Validate token with Auth Service
 		const userData = await validateToken(token);

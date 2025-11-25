@@ -36,7 +36,7 @@ productClient.interceptors.response.use(
 // Get product by ID
 export const getProductById = async (productId) => {
 	try {
-		const response = await productClient.get(`/products/${productId}`);
+		const response = await productClient.get(`/api/products/${productId}`);
 		return response.data;
 	} catch (error) {
 		console.error(`Error fetching product ${productId}:`, error.message);

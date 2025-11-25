@@ -1,25 +1,26 @@
 version: '3.8'
 
 services:
-  # ==================== INFRASTRUCTURE SERVICES ====================
-  
+  # ======================================
+  # INFRASTRUCTURE LAYER ONLY
+  # ======================================
+  # MongoDB - Database
   mongodb:
     image: mongo:7
     container_name: mongodb
     ports:
       - "27017:27017"
     volumes:
-      - mongo-data:/data/db
-    environment:
-      - MONGO_INITDB_DATABASE=ecommerce
+      - mongodb-data:/data/db
     networks:
       - microservices-network
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Redis - Caching & Session Storage
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -35,33 +36,30 @@ services:
       timeout: 5s
       retries: 5
 
-  # Kafka - Message Broker for Event Streaming
+  # Zookeeper - Kafka coordination
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
+    ports:
+      - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     volumes:
       - zookeeper-data:/var/lib/zookeeper/data
-      - zookeeper-log:/var/lib/zookeeper/log
+      - zookeeper-logs:/var/lib/zookeeper/log
     networks:
       - microservices-network
-    healthcheck:
-      test: echo stat | nc localhost 2181
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
+  # Kafka - Event Streaming
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
     depends_on:
-      zookeeper:
-        condition: service_healthy
+      - zookeeper
     ports:
       - "9092:9092"
-      - "29092:29092"
+      - "9093:9093"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -69,24 +67,23 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     volumes:
       - kafka-data:/var/lib/kafka/data
     networks:
       - microservices-network
     healthcheck:
-      test: kafka-broker-api-versions --bootstrap-server localhost:9092
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
       interval: 10s
       timeout: 10s
       retries: 5
 
-  # Kafka UI - Web interface for Kafka management
+  # Kafka UI - Web interface for Kafka
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     depends_on:
-      kafka:
-        condition: service_healthy
+      - kafka
     ports:
       - "8080:8080"
     environment:
@@ -96,22 +93,29 @@ services:
     networks:
       - microservices-network
 
-  # Kafka Topics Initialization
+  # Kafka Init - Create topics
   kafka-init:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka-init
     depends_on:
       kafka:
         condition: service_healthy
-    entrypoint: ['/bin/bash', '/scripts/init-kafka.sh']
-    volumes:
-      - ./scripts/init-kafka.sh:/scripts/init-kafka.sh:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      echo 'Creating Kafka topics...'
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --replication-factor 1 --partitions 3 --topic user.events
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --replication-factor 1 --partitions 3 --topic product.events
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --replication-factor 1 --partitions 3 --topic order.events
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --replication-factor 1 --partitions 3 --topic email.tasks
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --replication-factor 1 --partitions 3 --topic analytics-events
+      echo 'Topics created successfully'
+      kafka-topics --list --bootstrap-server kafka:29092
+      "
     networks:
       - microservices-network
-    restart: on-failure
 
-  # ==================== MONITORING ====================
-  
+  # Prometheus - Metrics collection
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -122,31 +126,26 @@ services:
       - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
     networks:
       - microservices-network
 
+  # Grafana - Monitoring dashboards
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana-data:/var/lib/grafana
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
     networks:
       - microservices-network
-    depends_on:
-      - prometheus
 
-  # ==================== API GATEWAY ====================
-  
-  # Kong Database (PostgreSQL)
+  # Kong Database - PostgreSQL for Kong
   kong-database:
-    image: postgres:15-alpine
+    image: postgres:15
     container_name: kong-database
     environment:
       POSTGRES_USER: kong
@@ -157,33 +156,38 @@ services:
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kong"]
+      test: ["CMD", "pg_isready", "-U", "kong"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Kong Migration - Initialize database
+  # Kong Migration - Database setup
   kong-migration:
     image: kong:3.3.0-alpine
     container_name: kong-migration
-    command: kong migrations bootstrap
+    depends_on:
+      kong-database:
+        condition: service_healthy
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-database
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: kong
-      KONG_PG_DATABASE: kong
+    command: kong migrations bootstrap
     networks:
       - microservices-network
-    depends_on:
-      kong-database:
-        condition: service_healthy
-    restart: on-failure
 
-  # Kong API Gateway
+  # Kong - API Gateway
   kong:
     image: kong:3.3.0-alpine
     container_name: kong
+    depends_on:
+      - kong-migration
+    ports:
+      - "8000:8000"  # Proxy
+      - "8001:8001"  # Admin API
+      - "8443:8443"  # Proxy SSL
+      - "8444:8444"  # Admin API SSL
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
@@ -192,13 +196,6 @@ services:
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
-      KONG_ADMIN_GUI_URL: http://localhost:8002
-    ports:
-      - "8000:8000"  # Proxy HTTP
-      - "8443:8443"  # Proxy HTTPS
-      - "8001:8001"  # Admin API HTTP
-      - "8444:8444"  # Admin API HTTPS
-      - "8002:8002"  # Kong Manager (GUI)
     volumes:
       - ./kong.yml:/usr/local/kong/declarative/kong.yml:ro
     networks:
@@ -207,20 +204,17 @@ services:
       test: ["CMD", "kong", "health"]
       interval: 10s
       timeout: 10s
-      retries: 5
-    restart: on-failure
+      retries: 10
 
-# ==================== NETWORKS ====================
 networks:
   microservices-network:
     driver: bridge
 
-# ==================== VOLUMES ====================
 volumes:
-  mongo-data:
+  mongodb-data:
   redis-data:
   zookeeper-data:
-  zookeeper-log:
+  zookeeper-logs:
   kafka-data:
   kong-db-data:
   prometheus-data:

@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import { connectDB } from "./lib/db.js";
 import { redis } from "./lib/redis.js";
@@ -19,6 +20,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Health check endpoint
 app.get("/health", (req, res) => {

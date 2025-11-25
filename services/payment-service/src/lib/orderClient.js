@@ -36,7 +36,7 @@ orderClient.interceptors.response.use(
 // Create order after successful payment
 export const createOrder = async (orderData, token) => {
 	try {
-		const response = await orderClient.post("/orders", orderData, {
+		const response = await orderClient.post("/api/orders", orderData, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},

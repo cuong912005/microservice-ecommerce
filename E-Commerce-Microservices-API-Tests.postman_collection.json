@@ -1,0 +1,1123 @@
+{
+	"info": {
+		"name": "E-Commerce Microservices API Tests",
+		"description": "Complete API test collection for microservices architecture via Kong API Gateway",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "kongUrl",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "productId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "couponCode",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "orderId",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Auth Service",
+			"item": [
+				{
+					"name": "Signup Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+									"    pm.test('Signup successful', () => {",
+									"        pm.expect(jsonData).to.have.property('user');",
+									"        pm.expect(jsonData.user).to.have.property('role', 'customer');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Customer\",\n    \"email\": \"customer@microservices.test\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/auth/signup",
+							"host": ["{{kongUrl}}"],
+							"path": ["auth", "signup"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Signup Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+									"    pm.test('Admin signup successful', () => {",
+									"        pm.expect(jsonData.user).to.have.property('role', 'admin');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Admin User\",\n    \"email\": \"admin@microservices.test\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/auth/signup",
+							"host": ["{{kongUrl}}"],
+							"path": ["auth", "signup"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.accessToken) {",
+									"        pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+									"    }",
+									"    if (jsonData.refreshToken) {",
+									"        pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+									"    }",
+									"    pm.test('Login successful', () => {",
+									"        pm.expect(jsonData).to.have.property('_id');",
+									"        pm.expect(jsonData).to.have.property('role', 'admin');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@microservices.test\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/auth/login",
+							"host": ["{{kongUrl}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.accessToken) {",
+									"        pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+									"    }",
+									"    if (jsonData.refreshToken) {",
+									"        pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+									"    }",
+									"    pm.test('Login successful', () => {",
+									"        pm.expect(jsonData).to.have.property('_id');",
+									"        pm.expect(jsonData).to.have.property('role', 'customer');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"customer@microservices.test\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/auth/login",
+							"host": ["{{kongUrl}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Profile retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('_id');",
+									"    pm.expect(jsonData).to.have.property('email');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/auth/profile",
+							"host": ["{{kongUrl}}"],
+							"path": ["auth", "profile"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+									"    pm.test('Token refreshed', () => {",
+									"        pm.expect(jsonData).to.have.property('accessToken');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/auth/refresh-token",
+							"host": ["{{kongUrl}}"],
+							"path": ["auth", "refresh-token"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Logout successful', () => {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/auth/logout",
+							"host": ["{{kongUrl}}"],
+							"path": ["auth", "logout"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Product Service",
+			"item": [
+				{
+					"name": "Get Featured Products (Public)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Featured products retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/products/featured",
+							"host": ["{{kongUrl}}"],
+							"path": ["products", "featured"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Products by Category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Category products retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('products');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/products/category/jeans",
+							"host": ["{{kongUrl}}"],
+							"path": ["products", "category", "jeans"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Recommendations",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Recommendations retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/products/recommendations",
+							"host": ["{{kongUrl}}"],
+							"path": ["products", "recommendations"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Products (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('All products retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('products');",
+									"    if (jsonData.products && jsonData.products.length > 0) {",
+									"        pm.collectionVariables.set('productId', jsonData.products[0]._id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{kongUrl}}/products"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Product (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('productId', jsonData._id);",
+									"    pm.test('Product created', () => {",
+									"        pm.expect(jsonData).to.have.property('_id');",
+									"        pm.expect(jsonData).to.have.property('name');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Microservices Test Product\",\n    \"description\": \"Product created via microservices architecture\",\n    \"price\": 49.99,\n    \"image\": \"https://via.placeholder.com/400\",\n    \"category\": \"jeans\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/products",
+							"host": ["{{kongUrl}}"],
+							"path": ["products"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Toggle Featured Product (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Product featured status toggled', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('isFeatured');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/products/{{productId}}",
+							"host": ["{{kongUrl}}"],
+							"path": ["products", "{{productId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Product (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Product deleted', () => {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/products/{{productId}}",
+							"host": ["{{kongUrl}}"],
+							"path": ["products", "{{productId}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cart Service",
+			"item": [
+				{
+					"name": "Get Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Cart retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/cart",
+							"host": ["{{kongUrl}}"],
+							"path": ["cart"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add to Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Product added to cart', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": \"{{productId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/cart",
+							"host": ["{{kongUrl}}"],
+							"path": ["cart"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Cart Quantity",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Cart quantity updated', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"quantity\": 3\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/cart/{{productId}}",
+							"host": ["{{kongUrl}}"],
+							"path": ["cart", "{{productId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove All from Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Cart cleared', () => {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/cart",
+							"host": ["{{kongUrl}}"],
+							"path": ["cart"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Coupon Service",
+			"item": [
+				{
+					"name": "Get Active Coupon",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData) {",
+									"        pm.collectionVariables.set('couponCode', jsonData.code);",
+									"    }",
+									"    pm.test('Coupon retrieved', () => {",
+									"        pm.expect(jsonData).to.be.an('object').or.null;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/coupons",
+							"host": ["{{kongUrl}}"],
+							"path": ["coupons"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Coupon (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('couponCode', jsonData.code);",
+									"    pm.test('Coupon created', () => {",
+									"        pm.expect(jsonData).to.have.property('code');",
+									"        pm.expect(jsonData).to.have.property('discountPercentage');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"discountPercentage\": 15,\n    \"expirationDate\": \"2025-12-31\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/coupons/create",
+							"host": ["{{kongUrl}}"],
+							"path": ["coupons", "create"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Coupon",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Coupon validated', () => {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"    if (pm.response.code === 200) {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('discountPercentage');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"{{couponCode}}\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/coupons/validate",
+							"host": ["{{kongUrl}}"],
+							"path": ["coupons", "validate"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Coupon (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Coupon deactivated', () => {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/coupons/{{couponCode}}",
+							"host": ["{{kongUrl}}"],
+							"path": ["coupons", "{{couponCode}}"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Order Service",
+			"item": [
+				{
+					"name": "Get User Orders",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Orders retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    if (jsonData.length > 0) {",
+									"        pm.collectionVariables.set('orderId', jsonData[0]._id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/orders",
+							"host": ["{{kongUrl}}"],
+							"path": ["orders"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Order details retrieved', () => {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"    if (pm.response.code === 200) {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData).to.have.property('_id');",
+									"        pm.expect(jsonData).to.have.property('totalAmount');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/orders/{{orderId}}",
+							"host": ["{{kongUrl}}"],
+							"path": ["orders", "{{orderId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('orderId', jsonData._id);",
+									"    pm.test('Order created', () => {",
+									"        pm.expect(jsonData).to.have.property('_id');",
+									"        pm.expect(jsonData).to.have.property('totalAmount');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"products\": [\n        {\n            \"product\": \"{{productId}}\",\n            \"quantity\": 2\n        }\n    ],\n    \"couponCode\": \"{{couponCode}}\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/orders",
+							"host": ["{{kongUrl}}"],
+							"path": ["orders"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Orders (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('All orders retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/orders/admin/all",
+							"host": ["{{kongUrl}}"],
+							"path": ["orders", "admin", "all"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Payment Service",
+			"item": [
+				{
+					"name": "Create Checkout Session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Checkout session created', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('url');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"products\": [\n        {\n            \"product\": \"{{productId}}\",\n            \"quantity\": 2\n        }\n    ],\n    \"couponCode\": \"{{couponCode}}\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/payments/create-checkout-session",
+							"host": ["{{kongUrl}}"],
+							"path": ["payments", "create-checkout-session"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Checkout Success",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Checkout success handled', () => {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sessionId\": \"YOUR_STRIPE_SESSION_ID_HERE\"\n}"
+						},
+						"url": {
+							"raw": "{{kongUrl}}/payments/checkout-success",
+							"host": ["{{kongUrl}}"],
+							"path": ["payments", "checkout-success"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Analytics Service",
+			"item": [
+				{
+					"name": "Get Analytics Data (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Analytics retrieved', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('analyticsData');",
+									"    pm.expect(jsonData).to.have.property('dailySalesData');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{kongUrl}}/analytics",
+							"host": ["{{kongUrl}}"],
+							"path": ["analytics"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Infrastructure",
+			"item": [
+				{
+					"name": "Auth Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3001/health",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3001",
+							"path": ["health"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Product Service Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3002/health",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "3002",
+							"path": ["health"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Kong Gateway Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8001/status",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8001",
+							"path": ["status"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Kong Services List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8001/services",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8001",
+							"path": ["services"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Kong Routes List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8001/routes",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8001",
+							"path": ["routes"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

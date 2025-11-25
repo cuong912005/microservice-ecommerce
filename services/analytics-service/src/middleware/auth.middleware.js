@@ -3,7 +3,8 @@ import { validateToken } from "../lib/serviceClients.js";
 // Verify admin role
 export const verifyAdmin = async (req, res, next) => {
 	try {
-		const token = req.headers.authorization?.replace("Bearer ", "");
+		// Get token from cookie or Authorization header
+		const token = req.cookies?.accessToken || req.headers.authorization?.replace("Bearer ", "");
 
 		if (!token) {
 			return res.status(401).json({
@@ -40,7 +41,8 @@ export const verifyAdmin = async (req, res, next) => {
 // Verify authenticated user
 export const verifyAuth = async (req, res, next) => {
 	try {
-		const token = req.headers.authorization?.replace("Bearer ", "");
+		// Get token from cookie or Authorization header
+		const token = req.cookies?.accessToken || req.headers.authorization?.replace("Bearer ", "");
 
 		if (!token) {
 			return res.status(401).json({

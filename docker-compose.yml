@@ -218,21 +218,12 @@ services:
     container_name: auth-service
     ports:
       - "3001:3001"
+    env_file:
+      - ./services/auth-service/.env
     environment:
-      - NODE_ENV=development
-      - PORT=3001
       - MONGO_URI=mongodb://mongodb:27017/auth_db
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=kafka:29092
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-      - ACCESS_TOKEN_SECRET=your-super-secret-jwt-key-change-in-production
-      - REFRESH_TOKEN_SECRET=your-super-secret-refresh-key-change-in-production
-      - JWT_ACCESS_EXPIRY=15m
-      - JWT_REFRESH_EXPIRY=7d
-      - GOOGLE_CLIENT_ID=your-google-client-id
-      - GOOGLE_CLIENT_SECRET=your-google-client-secret
-      - GITHUB_CLIENT_ID=your-github-client-id
-      - GITHUB_CLIENT_SECRET=your-github-client-secret
     networks:
       - microservices-network
     depends_on:
@@ -252,15 +243,12 @@ services:
     container_name: product-service
     ports:
       - "3002:3002"
+    env_file:
+      - ./services/product-service/.env
     environment:
-      - NODE_ENV=development
-      - PORT=3002
       - MONGO_URI=mongodb://mongodb:27017/products_db
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=kafka:29092
-      - CLOUDINARY_CLOUD_NAME=your-cloudinary-name
-      - CLOUDINARY_API_KEY=your-cloudinary-key
-      - CLOUDINARY_API_SECRET=your-cloudinary-secret
       - AUTH_SERVICE_URL=http://auth-service:3001
     networks:
       - microservices-network
@@ -281,14 +269,11 @@ services:
     container_name: payment-service
     ports:
       - "3003:3003"
+    env_file:
+      - ./services/payment-service/.env
     environment:
-      - NODE_ENV=development
-      - PORT=3003
       - MONGO_URI=mongodb://mongodb:27017/payments_db
       - KAFKA_BROKERS=kafka:29092
-      - STRIPE_SECRET_KEY=your-stripe-secret-key
-      - STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
-      # Direct REST calls to other services
       - ORDER_SERVICE_URL=http://order-service:3005
       - AUTH_SERVICE_URL=http://auth-service:3001
     networks:
@@ -308,9 +293,9 @@ services:
     container_name: cart-service
     ports:
       - "3004:3004"
+    env_file:
+      - ./services/cart-service/.env
     environment:
-      - NODE_ENV=development
-      - PORT=3004
       - REDIS_URL=redis://redis:6379
       - MONGO_URI=mongodb://mongodb:27017/carts_db
       - KAFKA_BROKERS=kafka:29092
@@ -335,12 +320,11 @@ services:
     container_name: order-service
     ports:
       - "3005:3005"
+    env_file:
+      - ./services/order-service/.env
     environment:
-      - NODE_ENV=development
-      - PORT=3005
       - MONGO_URI=mongodb://mongodb:27017/orders_db
       - KAFKA_BROKERS=kafka:29092
-      # Direct REST calls
       - CART_SERVICE_URL=http://cart-service:3004
       - PRODUCT_SERVICE_URL=http://product-service:3002
       - PAYMENT_SERVICE_URL=http://payment-service:3003
@@ -362,9 +346,9 @@ services:
     container_name: coupon-service
     ports:
       - "3008:3008"
+    env_file:
+      - ./services/coupon-service/.env
     environment:
-      - NODE_ENV=development
-      - PORT=3008
       - MONGO_URI=mongodb://mongodb:27017/coupons_db
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=kafka:29092
@@ -388,12 +372,11 @@ services:
     container_name: analytics-service
     ports:
       - "3007:3007"
+    env_file:
+      - ./services/analytics-service/.env
     environment:
-      - NODE_ENV=development
-      - PORT=3007
       - MONGO_URI=mongodb://mongodb:27017/analytics_db
       - KAFKA_BROKERS=kafka:29092
-      # Call services directly for data aggregation
       - ORDER_SERVICE_URL=http://order-service:3005
       - PRODUCT_SERVICE_URL=http://product-service:3002
       - AUTH_SERVICE_URL=http://auth-service:3001
@@ -416,17 +399,11 @@ services:
     container_name: worker-service
     ports:
       - "3006:3006"
+    env_file:
+      - ./services/worker-service/.env
     environment:
-      - NODE_ENV=development
-      - PORT=3006
       - KAFKA_BROKERS=kafka:29092
-      - KAFKA_GROUP_ID=worker-service-group
       - MONGO_URI=mongodb://mongodb:27017/worker_db
-      # SendGrid configuration
-      - SENDGRID_API_KEY=your-sendgrid-api-key
-      - SENDGRID_FROM_EMAIL=noreply@ecommerce.com
-      - SENDGRID_FROM_NAME=E-Commerce Store
-      # Service URLs for fetching data
       - ORDER_SERVICE_URL=http://order-service:3005
       - AUTH_SERVICE_URL=http://auth-service:3001
     networks:
