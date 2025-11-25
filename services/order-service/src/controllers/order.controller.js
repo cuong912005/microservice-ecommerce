@@ -13,8 +13,16 @@ export const createOrder = async (req, res) => {
 		// 1. Fetch cart items from Cart Service
 		let cart;
 		try {
+			console.log("Fetching cart for userId:", userId);
 			cart = await getCart(userId, token);
+			console.log("Cart fetched successfully:", cart);
 		} catch (error) {
+			console.error("Failed to fetch cart:", {
+				userId,
+				error: error.message,
+				response: error.response?.data,
+				status: error.response?.status,
+			});
 			return res.status(400).json({
 				message: "Failed to fetch cart",
 				error: error.message,
@@ -25,11 +33,14 @@ export const createOrder = async (req, res) => {
 			return res.status(400).json({ message: "Cart is empty" });
 		}
 
+		console.log("Cart structure:", JSON.stringify(cart, null, 2));
+
 		// 2. Validate products and prepare order items
 		const orderProducts = [];
 		let totalAmount = 0;
 
 		for (const item of cart.items) {
+			console.log("Processing cart item:", JSON.stringify(item, null, 2));
 			try {
 				// Validate product exists and is available
 				const product = await getProduct(item.productId);
@@ -41,16 +52,17 @@ export const createOrder = async (req, res) => {
 				}
 
 				// Use cached price from cart (already validated)
-				const itemTotal = item.price * item.quantity;
+				// Cart uses productPrice, productName, productImage
+				const itemTotal = item.productPrice * item.quantity;
 				totalAmount += itemTotal;
 
 				orderProducts.push({
 					product: item.productId,
 					productId: item.productId,
 					quantity: item.quantity,
-					price: item.price,
-					name: item.name,
-					image: item.image,
+					price: item.productPrice,
+					name: item.productName,
+					image: item.productImage,
 				});
 			} catch (error) {
 				return res.status(400).json({
@@ -63,9 +75,7 @@ export const createOrder = async (req, res) => {
 		// 3. Apply coupon discount if provided
 		let couponDiscount = 0;
 		if (couponCode) {
-			// Note: In full implementation, would call Coupon Service to validate
-			// For MVP, we'll accept the coupon from request
-			// Assume 10% discount for simplicity
+			
 			couponDiscount = totalAmount * 0.1;
 			totalAmount -= couponDiscount;
 		}

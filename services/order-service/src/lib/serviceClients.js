@@ -47,21 +47,36 @@ const cartClient = createServiceClient(process.env.CART_SERVICE_URL);
 
 export const getCart = async (userId, token) => {
 	try {
-		const response = await cartClient.get(`/api/cart/${userId}`, {
+		const url = `/api/cart/`;
+		console.log("Cart Service - Request:", {
+			baseURL: process.env.CART_SERVICE_URL,
+			url,
+			userId,
+			hasToken: !!token,
+		});
+		
+		const response = await cartClient.get(url, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},
 		});
+		
+		console.log("Cart Service - Response:", response.status, response.data);
 		return response.data;
 	} catch (error) {
-		console.error("Error fetching cart:", error.message);
+		console.error("Cart Service - Error:", {
+			message: error.message,
+			status: error.response?.status,
+			data: error.response?.data,
+			url: error.config?.url,
+		});
 		throw error;
 	}
 };
 
 export const clearCart = async (userId, token) => {
 	try {
-		const response = await cartClient.delete(`/api/cart/${userId}/clear`, {
+		const response = await cartClient.delete(`/api/cart/`, {
 			headers: {
 				Authorization: `Bearer ${token}`,
 			},

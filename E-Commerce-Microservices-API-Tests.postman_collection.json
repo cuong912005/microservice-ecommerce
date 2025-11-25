@@ -694,10 +694,11 @@
 								"exec": [
 									"if (pm.response.code === 201) {",
 									"    const jsonData = pm.response.json();",
-									"    pm.collectionVariables.set('couponCode', jsonData.code);",
+									"    pm.collectionVariables.set('couponCode', jsonData.coupon.code);",
 									"    pm.test('Coupon created', () => {",
-									"        pm.expect(jsonData).to.have.property('code');",
-									"        pm.expect(jsonData).to.have.property('discountPercentage');",
+									"        pm.expect(jsonData).to.have.property('coupon');",
+									"        pm.expect(jsonData.coupon).to.have.property('code');",
+									"        pm.expect(jsonData.coupon).to.have.property('value');",
 									"    });",
 									"}"
 								],
@@ -715,7 +716,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"discountPercentage\": 15,\n    \"expirationDate\": \"2025-12-31\"\n}"
+							"raw": "{\n    \"type\": \"percentage\",\n    \"value\": 15,\n    \"expirationDate\": \"2025-12-31\",\n    \"description\": \"15% discount coupon\"\n}"
 						},
 						"url": {
 							"raw": "{{kongUrl}}/coupons/create",
