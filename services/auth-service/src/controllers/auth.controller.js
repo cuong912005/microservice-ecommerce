@@ -3,10 +3,18 @@ import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { publishEvent, createEvent } from "../lib/kafka.js";
 
-const generateTokens = (userId) => {
-	const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET, {
-		expiresIn: "15m",
-	});
+const generateTokens = (userId, role = "customer") => {
+	const accessToken = jwt.sign(
+		{ 
+			userId, 
+			role,
+			iss: "e-commerce-issuer" // Kong JWT plugin key claim
+		}, 
+		process.env.ACCESS_TOKEN_SECRET, 
+		{
+			expiresIn: "15m",
+		}
+	);
 
 	const refreshToken = jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, {
 		expiresIn: "7d",
@@ -51,7 +59,7 @@ export const signup = async (req, res) => {
 		const user = await User.create({ name, email, password });
 
 		// Authenticate
-		const { accessToken, refreshToken } = generateTokens(user._id);
+		const { accessToken, refreshToken } = generateTokens(user._id, user.role);
 		await storeRefreshToken(user._id, refreshToken);
 
 		setCookies(res, accessToken, refreshToken);
@@ -117,7 +125,7 @@ export const login = async (req, res) => {
 			return res.status(401).json({ message: "Invalid email or password" });
 		}
 
-		const { accessToken, refreshToken } = generateTokens(user._id);
+		const { accessToken, refreshToken } = generateTokens(user._id, user.role);
 		await storeRefreshToken(user._id, refreshToken);
 		setCookies(res, accessToken, refreshToken);
 
@@ -179,9 +187,21 @@ export const refreshToken = async (req, res) => {
 			return res.status(401).json({ message: "Invalid refresh token" });
 		}
 
-		const accessToken = jwt.sign({ userId: decoded.userId }, process.env.ACCESS_TOKEN_SECRET, { 
-			expiresIn: "15m" 
-		});
+		// Get user to include role in new token
+		const user = await User.findById(decoded.userId);
+		if (!user) {
+			return res.status(401).json({ message: "User not found" });
+		}
+
+		const accessToken = jwt.sign(
+			{ 
+				userId: decoded.userId,
+				role: user.role,
+				iss: "e-commerce-issuer"
+			}, 
+			process.env.ACCESS_TOKEN_SECRET, 
+			{ expiresIn: "15m" }
+		);
 
 		res.cookie("accessToken", accessToken, {
 			httpOnly: true,
@@ -209,7 +229,7 @@ export const getProfile = async (req, res) => {
 export const oauthSuccess = async (req, res) => {
 	try {
 		// Generate tokens for OAuth user
-		const { accessToken, refreshToken } = generateTokens(req.user._id);
+		const { accessToken, refreshToken } = generateTokens(req.user._id, req.user.role);
 		await storeRefreshToken(req.user._id, refreshToken);
 		setCookies(res, accessToken, refreshToken);
 

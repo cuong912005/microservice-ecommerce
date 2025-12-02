@@ -38,6 +38,20 @@ services:
           - http
           - https
     plugins:
+      - name: jwt
+        config:
+          uri_param_names:
+            - jwt
+          cookie_names:
+            - accessToken
+          header_names:
+            - authorization
+          claims_to_verify:
+            - exp
+          key_claim_name: iss
+          secret_is_base64: false
+          anonymous: null
+          run_on_preflight: false
       - name: request-transformer
         config:
           add:
@@ -61,6 +75,20 @@ services:
           - http
           - https
     plugins:
+      - name: jwt
+        config:
+          uri_param_names:
+            - jwt
+          cookie_names:
+            - accessToken
+          header_names:
+            - authorization
+          claims_to_verify:
+            - exp
+          key_claim_name: iss
+          secret_is_base64: false
+          anonymous: null
+          run_on_preflight: false
       - name: request-transformer
         config:
           add:
@@ -84,6 +112,20 @@ services:
           - http
           - https
     plugins:
+      - name: jwt
+        config:
+          uri_param_names:
+            - jwt
+          cookie_names:
+            - accessToken
+          header_names:
+            - authorization
+          claims_to_verify:
+            - exp
+          key_claim_name: iss
+          secret_is_base64: false
+          anonymous: null
+          run_on_preflight: false
       - name: request-transformer
         config:
           add:
@@ -107,6 +149,20 @@ services:
           - http
           - https
     plugins:
+      - name: jwt
+        config:
+          uri_param_names:
+            - jwt
+          cookie_names:
+            - accessToken
+          header_names:
+            - authorization
+          claims_to_verify:
+            - exp
+          key_claim_name: iss
+          secret_is_base64: false
+          anonymous: null
+          run_on_preflight: false
       - name: request-transformer
         config:
           add:
@@ -127,6 +183,20 @@ services:
           - http
           - https
     plugins:
+      - name: jwt
+        config:
+          uri_param_names:
+            - jwt
+          cookie_names:
+            - accessToken
+          header_names:
+            - authorization
+          claims_to_verify:
+            - exp
+          key_claim_name: iss
+          secret_is_base64: false
+          anonymous: null
+          run_on_preflight: false
       - name: request-transformer
         config:
           add:
@@ -150,6 +220,20 @@ services:
           - http
           - https
     plugins:
+      - name: jwt
+        config:
+          uri_param_names:
+            - jwt
+          cookie_names:
+            - accessToken
+          header_names:
+            - authorization
+          claims_to_verify:
+            - exp
+          key_claim_name: iss
+          secret_is_base64: false
+          anonymous: null
+          run_on_preflight: false
       - name: request-transformer
         config:
           add:
@@ -212,9 +296,16 @@ plugins:
       path: /tmp/kong-requests.log
       reopen: true
 
-# ==================== CONSUMERS (for rate limiting) ====================
+# ==================== CONSUMERS & JWT CREDENTIALS ====================
 
 consumers:
+  - username: e-commerce-auth-service
+    custom_id: auth-service
+    jwt_secrets:
+      - key: e-commerce-issuer
+        algorithm: HS256
+        secret: your-jwt-secret-key-here-change-in-production
+        
   - username: anonymous
     custom_id: anonymous-user
 
