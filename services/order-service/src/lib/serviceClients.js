@@ -88,6 +88,20 @@ export const clearCart = async (userId, token) => {
 	}
 };
 
+export const clearCartInternal = async (userId) => {
+	try {
+		const response = await cartClient.delete(`/api/cart/internal/${userId}`, {
+			headers: {
+				"X-Internal-Secret": process.env.INTERNAL_SERVICE_SECRET || "internal-secret-2024",
+			},
+		});
+		return response.data;
+	} catch (error) {
+		console.error("Error clearing cart (internal):", error.message);
+		throw error;
+	}
+};
+
 // Product Service Client
 const productClient = createServiceClient(process.env.PRODUCT_SERVICE_URL);
 
@@ -103,8 +117,7 @@ export const getProduct = async (productId) => {
 
 export const updateProductStock = async (productId, quantity, token) => {
 	try {
-		// Note: This would require a stock management endpoint in Product Service
-		// For MVP, we'll skip actual stock reduction
+		// stock update 
 		console.log(`Stock update skipped for product ${productId}: -${quantity}`);
 		return { success: true };
 	} catch (error) {
@@ -130,6 +143,24 @@ export const createPaymentSession = async (orderData, token) => {
 		return response.data;
 	} catch (error) {
 		console.error("Error creating payment session:", error.message);
+		throw error;
+	}
+};
+
+export const requestRefund = async (stripeSessionId, token) => {
+	try {
+		const response = await paymentClient.post(
+			"/api/payments/refund",
+			{ stripeSessionId },
+			{
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			}
+		);
+		return response.data;
+	} catch (error) {
+		console.error("Error requesting refund:", error.message);
 		throw error;
 	}
 };

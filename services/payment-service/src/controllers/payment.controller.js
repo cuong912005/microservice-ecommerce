@@ -4,7 +4,7 @@ import { createOrder } from "../lib/orderClient.js";
 import Transaction from "../models/transaction.model.js";
 import { v4 as uuidv4 } from "uuid";
 
-// Create Stripe checkout session (Story 5.1)
+// Create Stripe checkout session 
 export const createCheckoutSession = async (req, res) => {
 	try {
 		const userId = req.user.userId;
@@ -117,7 +117,7 @@ export const createCheckoutSession = async (req, res) => {
 	}
 };
 
-// Handle successful checkout (Story 5.1)
+// Handle successful checkout 
 export const checkoutSuccess = async (req, res) => {
 	try {
 		const { sessionId } = req.body;
@@ -225,7 +225,7 @@ export const checkoutSuccess = async (req, res) => {
 	}
 };
 
-// Handle Stripe webhooks (Story 5.2)
+// Handle Stripe webhooks 
 export const handleWebhook = async (req, res) => {
 	const sig = req.headers["stripe-signature"];
 	const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -287,7 +287,22 @@ async function handlePaymentIntentSucceeded(paymentIntent) {
 		});
 		await transaction.save();
 
-		// Publish event
+		// Publish payment status update event for Order Service
+		await publishEvent("payment-events", {
+			eventId: uuidv4(),
+			eventType: "payment-status-updated",
+			timestamp: new Date().toISOString(),
+			payload: {
+				transactionId: transaction._id,
+				orderId: transaction.orderId,
+				stripeSessionId: transaction.stripeSessionId,
+				status: "succeeded",
+				userId: transaction.userId,
+				amount: transaction.amount,
+			},
+		});
+
+		// Publish analytics event
 		await publishEvent("analytics-events", {
 			eventId: uuidv4(),
 			eventType: "payment-completed",
@@ -319,7 +334,23 @@ async function handlePaymentIntentFailed(paymentIntent) {
 		});
 		await transaction.save();
 
-		// Publish failure event
+		// Publish payment status update event for Order Service
+		await publishEvent("payment-events", {
+			eventId: uuidv4(),
+			eventType: "payment-status-updated",
+			timestamp: new Date().toISOString(),
+			payload: {
+				transactionId: transaction._id,
+				orderId: transaction.orderId,
+				stripeSessionId: transaction.stripeSessionId,
+				status: "failed",
+				userId: transaction.userId,
+				amount: transaction.amount,
+				reason: paymentIntent.last_payment_error?.message,
+			},
+		});
+
+		// Publish analytics failure event
 		await publishEvent("analytics-events", {
 			eventId: uuidv4(),
 			eventType: "payment-failed",
@@ -427,6 +458,108 @@ export const getTransaction = async (req, res) => {
 		console.error("Error fetching transaction:", error);
 		res.status(500).json({
 			message: "Error fetching transaction",
+			error: error.message,
+		});
+	}
+};
+
+// Create refund for transaction 
+export const createRefund = async (req, res) => {
+	try {
+		const { stripeSessionId } = req.body;
+		const userId = req.user.userId;
+
+		if (!stripeSessionId) {
+			return res.status(400).json({ message: "Stripe session ID is required" });
+		}
+
+		// Find transaction
+		const transaction = await Transaction.findOne({ stripeSessionId });
+
+		if (!transaction) {
+			return res.status(404).json({ message: "Transaction not found" });
+		}
+
+		// Verify user owns transaction or is admin
+		const isAdmin = req.user.role === "admin";
+		if (!isAdmin && transaction.userId !== userId) {
+			return res.status(403).json({ message: "Forbidden - Not your transaction" });
+		}
+
+		// Check if already refunded
+		if (transaction.status === "refunded") {
+			return res.status(400).json({ message: "Transaction already refunded" });
+		}
+
+		// Can only refund succeeded payments
+		if (transaction.status !== "succeeded") {
+			return res.status(400).json({
+				message: `Cannot refund transaction with status: ${transaction.status}`,
+			});
+		}
+
+		// Create refund in Stripe
+		try {
+			const refund = await stripe.refunds.create({
+				payment_intent: transaction.stripePaymentIntentId,
+			});
+
+			// Update transaction status
+			transaction.status = "refunded";
+			transaction.refundId = refund.id;
+			transaction.refundedAt = new Date();
+			await transaction.save();
+
+			// Publish refund event to Kafka
+			await publishEvent("payment-events", {
+				eventId: uuidv4(),
+				eventType: "payment-refunded",
+				timestamp: new Date().toISOString(),
+				payload: {
+					transactionId: transaction._id,
+					orderId: transaction.orderId,
+					stripeSessionId,
+					refundId: refund.id,
+					amount: transaction.amount,
+					userId: transaction.userId,
+					status: "refunded",
+				},
+			});
+
+			// Publish analytics event
+			await publishEvent("analytics-events", {
+				eventId: uuidv4(),
+				eventType: "payment-refunded",
+				timestamp: new Date().toISOString(),
+				payload: {
+					transactionId: transaction._id,
+					userId: transaction.userId,
+					amount: transaction.amount,
+					orderId: transaction.orderId,
+				},
+			});
+
+			res.json({
+				success: true,
+				message: "Refund created successfully",
+				refund: {
+					id: refund.id,
+					amount: refund.amount / 100,
+					status: refund.status,
+					transactionId: transaction._id,
+				},
+			});
+		} catch (stripeError) {
+			console.error("Stripe refund error:", stripeError);
+			return res.status(500).json({
+				message: "Failed to create refund in Stripe",
+				error: stripeError.message,
+			});
+		}
+	} catch (error) {
+		console.error("Error creating refund:", error);
+		res.status(500).json({
+			message: "Error processing refund",
 			error: error.message,
 		});
 	}

@@ -240,7 +240,7 @@ export const clearCart = async (req, res) => {
 	}
 };
 
-// Validate cart items (Story 4.2)
+// Validate cart items 
 export const validateCart = async (req, res) => {
 	try {
 		const userId = req.user.userId;
@@ -333,6 +333,39 @@ export const validateCart = async (req, res) => {
 
 	} catch (error) {
 		console.error("Error in validateCart controller:", error.message);
+		res.status(500).json({ message: "Server error", error: error.message });
+	}
+};
+
+// Clear cart by userId (Internal service-to-service call)
+export const clearCartByUserId = async (req, res) => {
+	try {
+		const { userId } = req.params;
+
+		// Verify internal service call using header secret
+		const internalSecret = req.headers['x-internal-secret'];
+		if (internalSecret !== process.env.INTERNAL_SERVICE_SECRET) {
+			return res.status(403).json({ message: "Forbidden - Internal service access only" });
+		}
+
+		if (!userId) {
+			return res.status(400).json({ message: "User ID is required" });
+		}
+
+		// Delete from MongoDB
+		await Cart.findOneAndDelete({ userId });
+
+		// Delete from Redis cache
+		await deleteCartFromRedis(userId);
+
+		console.log(`Cart cleared for userId: ${userId} (internal call)`);
+
+		res.json({
+			success: true,
+			message: "Cart cleared successfully",
+		});
+	} catch (error) {
+		console.error("Error in clearCartByUserId controller:", error.message);
 		res.status(500).json({ message: "Server error", error: error.message });
 	}
 };

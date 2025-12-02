@@ -6,6 +6,7 @@ import {
 	removeFromCart,
 	clearCart,
 	validateCart,
+	clearCartByUserId,
 } from "../controllers/cart.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
@@ -20,5 +21,8 @@ router.delete("/", protectRoute, clearCart);
 
 // Validate cart (Story 4.2)
 router.post("/validate", protectRoute, validateCart);
+
+// Internal service-to-service routes (no auth)
+router.delete("/internal/:userId", clearCartByUserId);
 
 export default router;

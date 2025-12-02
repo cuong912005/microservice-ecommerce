@@ -1,9 +1,9 @@
 import Order from "../models/order.model.js";
 import { publishEvent } from "../lib/kafka.js";
-import { getCart, clearCart, getProduct, createPaymentSession } from "../lib/serviceClients.js";
+import { getCart, clearCart, getProduct, createPaymentSession, requestRefund } from "../lib/serviceClients.js";
 import { v4 as uuidv4 } from "uuid";
 
-// Create order from cart (Story 6.1)
+// Create order from cart 
 export const createOrder = async (req, res) => {
 	try {
 		const userId = req.user.userId;
@@ -116,15 +116,9 @@ export const createOrder = async (req, res) => {
 			order.stripeSessionId = paymentSession.id;
 			await order.save();
 
-			// 6. Clear cart after successful order creation
-			try {
-				await clearCart(userId, token);
-			} catch (error) {
-				console.error("Failed to clear cart:", error.message);
-				// Don't fail the order if cart clear fails
-			}
+			// Note: Cart will be cleared after payment succeeds (via Kafka consumer)
 
-			// 7. Publish order creation event to Kafka
+			// 6. Publish order creation event to Kafka
 			await publishEvent("analytics-events", {
 				eventId: uuidv4(),
 				eventType: "order-created",
@@ -179,7 +173,7 @@ export const createOrder = async (req, res) => {
 	}
 };
 
-// Get single order by ID (Story 6.2)
+// Get single order by ID 
 export const getOrderById = async (req, res) => {
 	try {
 		const { id } = req.params;
@@ -207,7 +201,7 @@ export const getOrderById = async (req, res) => {
 	}
 };
 
-// Get user's orders (Story 6.2)
+// Get user's orders 
 export const getUserOrders = async (req, res) => {
 	try {
 		const { userId: requestedUserId } = req.params;
@@ -254,7 +248,7 @@ export const getUserOrders = async (req, res) => {
 	}
 };
 
-// Update order status (Story 6.2 - Admin only)
+// Update order status 
 export const updateOrderStatus = async (req, res) => {
 	try {
 		const { id } = req.params;
@@ -325,7 +319,7 @@ export const updateOrderStatus = async (req, res) => {
 	}
 };
 
-// Get all orders (Admin only)
+// Get all orders 
 export const getAllOrders = async (req, res) => {
 	try {
 		const { page = 1, limit = 20, status } = req.query;
@@ -386,6 +380,20 @@ export const cancelOrder = async (req, res) => {
 			return res.status(400).json({
 				message: `Cannot cancel order with status: ${order.status}`,
 			});
+		}
+
+		// If payment was successful, request refund
+		if (order.paymentStatus === "paid" && order.stripeSessionId) {
+			try {
+				const token = req.token;
+				await requestRefund(order.stripeSessionId, token);
+				order.paymentStatus = "refunded";
+				console.log(`Refund requested for order ${order._id}`);
+			} catch (refundError) {
+				console.error("Refund request failed:", refundError.message);
+				// Continue with cancellation even if refund fails
+				// Refund can be processed manually later
+			}
 		}
 
 		// Update status

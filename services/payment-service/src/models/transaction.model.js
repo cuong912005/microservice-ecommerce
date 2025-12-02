@@ -65,6 +65,12 @@ const transactionSchema = new mongoose.Schema(
 			type: String,
 			index: true,
 		},
+		// Refund information
+		refundId: {
+			type: String,
+			index: true,
+		},
+		refundedAt: Date,
 		// Stripe webhook events
 		webhookEvents: [{
 			eventType: String,

@@ -37,6 +37,12 @@ services:
         protocols:
           - http
           - https
+    plugins:
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
 
   - name: payment-service
     url: http://payment-service:3003
@@ -54,6 +60,12 @@ services:
         protocols:
           - http
           - https
+    plugins:
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
 
   - name: cart-service
     url: http://cart-service:3004
@@ -71,6 +83,12 @@ services:
         protocols:
           - http
           - https
+    plugins:
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
 
   - name: order-service
     url: http://order-service:3005
@@ -88,6 +106,12 @@ services:
         protocols:
           - http
           - https
+    plugins:
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
 
   - name: analytics-service
     url: http://analytics-service:3007
@@ -102,6 +126,12 @@ services:
         protocols:
           - http
           - https
+    plugins:
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
 
   - name: coupon-service
     url: http://coupon-service:3008
@@ -119,6 +149,12 @@ services:
         protocols:
           - http
           - https
+    plugins:
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
 
 # ==================== GLOBAL PLUGINS ====================
 

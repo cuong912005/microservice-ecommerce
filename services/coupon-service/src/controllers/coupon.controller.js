@@ -13,7 +13,7 @@ const generateCouponCode = () => {
 	return code;
 };
 
-// Create coupon (Admin) - Story 8.2
+// Create coupon (Admin) 
 export const createCoupon = async (req, res) => {
 	try {
 		const {
@@ -96,7 +96,7 @@ export const createCoupon = async (req, res) => {
 	}
 };
 
-// Validate coupon - Story 8.2
+// Validate coupon 
 export const validateCoupon = async (req, res) => {
 	try {
 		const { code, purchaseAmount } = req.body;
@@ -185,7 +185,7 @@ export const validateCoupon = async (req, res) => {
 	}
 };
 
-// Get user coupons - Story 8.2
+// Get user coupons
 export const getUserCoupons = async (req, res) => {
 	try {
 		const { userId } = req.params;
