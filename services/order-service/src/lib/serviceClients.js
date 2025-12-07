@@ -88,6 +88,20 @@ export const clearCart = async (userId, token) => {
 	}
 };
 
+export const getCartInternal = async (userId) => {
+	try {
+		const response = await cartClient.get(`/api/cart/internal/${userId}`, {
+			headers: {
+				"X-Internal-Secret": process.env.INTERNAL_SERVICE_SECRET || "internal-secret-2024",
+			},
+		});
+		return response.data;
+	} catch (error) {
+		console.error("Error fetching cart (internal):", error.message);
+		throw error;
+	}
+};
+
 export const clearCartInternal = async (userId) => {
 	try {
 		const response = await cartClient.delete(`/api/cart/internal/${userId}`, {

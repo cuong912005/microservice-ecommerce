@@ -304,7 +304,7 @@ consumers:
     jwt_secrets:
       - key: e-commerce-issuer
         algorithm: HS256
-        secret: your-jwt-secret-key-here-change-in-production
+        secret: your-super-secret-jwt-key-change-in-production
         
   - username: anonymous
     custom_id: anonymous-user

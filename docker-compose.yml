@@ -184,6 +184,8 @@ services:
   kong:
     image: kong:3.3.0-alpine
     container_name: kong
+    env_file:
+      - .env
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
@@ -193,6 +195,8 @@ services:
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_ADMIN_GUI_URL: http://localhost:8002
+      JWT_SECRET: ${JWT_SECRET}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
     ports:
       - "8000:8000"  # Proxy HTTP
       - "8443:8443"  # Proxy HTTPS

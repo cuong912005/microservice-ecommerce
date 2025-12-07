@@ -369,3 +369,48 @@ export const clearCartByUserId = async (req, res) => {
 		res.status(500).json({ message: "Server error", error: error.message });
 	}
 };
+
+// Get cart by userId (Internal service-to-service call)
+export const getCartByUserId = async (req, res) => {
+	try {
+		const { userId } = req.params;
+
+		// Verify internal service call using header secret
+		const internalSecret = req.headers['x-internal-secret'];
+		if (internalSecret !== process.env.INTERNAL_SERVICE_SECRET) {
+			return res.status(403).json({ message: "Forbidden - Internal service access only" });
+		}
+
+		if (!userId) {
+			return res.status(400).json({ message: "User ID is required" });
+		}
+
+		// Try Redis first for fast access
+		let cart = await getCartFromRedis(userId);
+
+		if (!cart) {
+			// Fallback to MongoDB
+			const cartDoc = await Cart.findOne({ userId });
+			
+			if (!cartDoc) {
+				// Return empty cart
+				return res.json({
+					userId,
+					items: [],
+					totalItems: 0,
+					subtotal: 0,
+				});
+			}
+
+			cart = cartDoc.toObject();
+			// Cache in Redis
+			await setCartInRedis(userId, cart);
+		}
+
+		console.log(`Cart fetched for userId: ${userId} (internal call)`);
+		res.json(cart);
+	} catch (error) {
+		console.error("Error in getCartByUserId controller:", error.message);
+		res.status(500).json({ message: "Server error", error: error.message });
+	}
+};

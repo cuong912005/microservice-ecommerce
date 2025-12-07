@@ -1,6 +1,6 @@
 import Order from "../models/order.model.js";
 import { publishEvent } from "../lib/kafka.js";
-import { getCart, clearCart, getProduct, createPaymentSession, requestRefund } from "../lib/serviceClients.js";
+import { getCart, getCartInternal, clearCart, getProduct, createPaymentSession, requestRefund } from "../lib/serviceClients.js";
 import { v4 as uuidv4 } from "uuid";
 
 // Create order from cart 
@@ -10,11 +10,11 @@ export const createOrder = async (req, res) => {
 		const token = req.token;
 		const { couponCode, shippingAddress } = req.body;
 
-		// 1. Fetch cart items from Cart Service
+		// 1. Fetch cart items from Cart Service (internal call)
 		let cart;
 		try {
 			console.log("Fetching cart for userId:", userId);
-			cart = await getCart(userId, token);
+			cart = await getCartInternal(userId);
 			console.log("Cart fetched successfully:", cart);
 		} catch (error) {
 			console.error("Failed to fetch cart:", {
@@ -116,21 +116,7 @@ export const createOrder = async (req, res) => {
 			order.stripeSessionId = paymentSession.id;
 			await order.save();
 
-			// Note: Cart will be cleared after payment succeeds (via Kafka consumer)
-
-			// 6. Publish order creation event to Kafka
-			await publishEvent("analytics-events", {
-				eventId: uuidv4(),
-				eventType: "order-created",
-				timestamp: new Date().toISOString(),
-				payload: {
-					orderId: order._id,
-					userId,
-					totalAmount: order.totalAmount,
-					productsCount: orderProducts.length,
-					status: order.status,
-				},
-			});
+			
 
 			// Return order with payment URL
 			res.status(201).json({

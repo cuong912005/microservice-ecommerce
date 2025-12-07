@@ -39,6 +39,17 @@ kafka-topics --create \
 
 echo "✓ Created topic: analytics-events (4 partitions, 30 days retention)"
 
+# Create payment-events topic (2 partitions, replication factor 1)
+kafka-topics --create \
+  --bootstrap-server kafka:29092 \
+  --topic payment-events \
+  --partitions 2 \
+  --replication-factor 1 \
+  --if-not-exists \
+  --config retention.ms=604800000
+
+echo "✓ Created topic: payment-events (2 partitions, 7 days retention)"
+
 echo ""
 echo "All Kafka topics created successfully!"
 echo ""
