@@ -196,6 +196,7 @@ services:
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_ADMIN_GUI_URL: http://localhost:8002
       JWT_SECRET: ${JWT_SECRET}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
       GATEWAY_SECRET: ${GATEWAY_SECRET}
     ports:
       - "8000:8000"  # Proxy HTTP
@@ -254,6 +255,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=kafka:29092
       - AUTH_SERVICE_URL=http://auth-service:3001
+      - GATEWAY_SECRET=${GATEWAY_SECRET}
     networks:
       - microservices-network
     depends_on:
@@ -280,6 +282,7 @@ services:
       - KAFKA_BROKERS=kafka:29092
       - ORDER_SERVICE_URL=http://order-service:3005
       - AUTH_SERVICE_URL=http://auth-service:3001
+      - GATEWAY_SECRET=${GATEWAY_SECRET}
     networks:
       - microservices-network
     depends_on:
@@ -305,6 +308,7 @@ services:
       - KAFKA_BROKERS=kafka:29092
       - PRODUCT_SERVICE_URL=http://product-service:3002
       - AUTH_SERVICE_URL=http://auth-service:3001
+      - GATEWAY_SECRET=${GATEWAY_SECRET}
     networks:
       - microservices-network
     depends_on:
@@ -333,6 +337,7 @@ services:
       - PRODUCT_SERVICE_URL=http://product-service:3002
       - PAYMENT_SERVICE_URL=http://payment-service:3003
       - AUTH_SERVICE_URL=http://auth-service:3001
+      - GATEWAY_SECRET=${GATEWAY_SECRET}
     networks:
       - microservices-network
     depends_on:
@@ -357,6 +362,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - KAFKA_BROKERS=kafka:29092
       - AUTH_SERVICE_URL=http://auth-service:3001
+      - GATEWAY_SECRET=${GATEWAY_SECRET}
     networks:
       - microservices-network
     depends_on:
@@ -384,6 +390,7 @@ services:
       - ORDER_SERVICE_URL=http://order-service:3005
       - PRODUCT_SERVICE_URL=http://product-service:3002
       - AUTH_SERVICE_URL=http://auth-service:3001
+      - GATEWAY_SECRET=${GATEWAY_SECRET}
     networks:
       - microservices-network
     depends_on:
