@@ -1,5 +1,5 @@
 import { Kafka } from "kafkajs";
-import AnalyticsEvent from "../models/analyticsEvent.model.js";
+import { processAnalyticsEvent } from "../consumers/analyticsConsumer.js";
 
 const kafka = new Kafka({
 	clientId: "analytics-service",
@@ -19,8 +19,9 @@ export const connectKafkaConsumer = async () => {
 		await consumer.connect();
 		console.log("Analytics Kafka consumer connected successfully");
 
+		// Subscribe to multiple topics
 		await consumer.subscribe({
-			topic: "analytics-events",
+			topics: ["analytics-events", "order-events"],
 			fromBeginning: false,
 		});
 
@@ -28,20 +29,11 @@ export const connectKafkaConsumer = async () => {
 			eachMessage: async ({ topic, partition, message }) => {
 				try {
 					const event = JSON.parse(message.value.toString());
-					console.log(`Processing analytics event: ${event.eventType}`);
-
-					// Store event in MongoDB
-					const analyticsEvent = new AnalyticsEvent({
-						eventType: event.eventType,
-						userId: event.payload?.userId,
-						metadata: event.payload || {},
-						timestamp: event.timestamp ? new Date(event.timestamp) : new Date(),
-					});
-
-					await analyticsEvent.save();
-					console.log(`Analytics event stored: ${event.eventType}`);
+					console.log(`[Analytics Service] Processing event from ${topic}: ${event.eventType}`);
+					await processAnalyticsEvent(event);
 				} catch (error) {
-					console.error("Error processing analytics event:", error);
+					console.error("[Analytics Service] Error processing event:", error);
+					
 				}
 			},
 		});

@@ -14,7 +14,7 @@ productClient.interceptors.response.use(
 	async (error) => {
 		const config = error.config;
 
-		// Retry up to 3 times
+		// Retry  3 times
 		if (!config.__retryCount) {
 			config.__retryCount = 0;
 		}
@@ -47,8 +47,7 @@ export const getProductById = async (productId) => {
 // Get multiple products by IDs
 export const getProductsByIds = async (productIds) => {
 	try {
-		// In a real scenario, you might have a batch endpoint
-		// For now, we'll fetch products individually and combine
+		
 		const promises = productIds.map(id => getProductById(id));
 		const products = await Promise.allSettled(promises);
 		

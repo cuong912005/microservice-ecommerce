@@ -10,7 +10,6 @@ export const redis = new Redis(process.env.REDIS_URL, {
 	reconnectOnError(err) {
 		const targetError = "READONLY";
 		if (err.message.includes(targetError)) {
-			// Only reconnect when the error contains "READONLY"
 			return true;
 		}
 		return false;
@@ -38,7 +37,7 @@ export const getCartFromRedis = async (userId) => {
 
 export const setCartInRedis = async (userId, cart, ttl = 604800) => {
 	try {
-		// TTL default 7 days (604800 seconds)
+		// TTL default 7 days 
 		await redis.setex(`cart:${userId}`, ttl, JSON.stringify(cart));
 		return true;
 	} catch (error) {

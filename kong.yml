@@ -56,7 +56,7 @@ services:
         config:
           add:
             headers:
-              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
+              - X-Gateway-Auth:${GATEWAY_SECRET}
 
   - name: payment-service
     url: http://payment-service:3003
@@ -93,7 +93,7 @@ services:
         config:
           add:
             headers:
-              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
+              - X-Gateway-Auth:${GATEWAY_SECRET}
 
   - name: cart-service
     url: http://cart-service:3004
@@ -130,7 +130,7 @@ services:
         config:
           add:
             headers:
-              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
+              - X-Gateway-Auth:${GATEWAY_SECRET}
 
   - name: order-service
     url: http://order-service:3005
@@ -167,7 +167,7 @@ services:
         config:
           add:
             headers:
-              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
+              - X-Gateway-Auth:${GATEWAY_SECRET}
 
   - name: analytics-service
     url: http://analytics-service:3007
@@ -201,7 +201,7 @@ services:
         config:
           add:
             headers:
-              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
+              - X-Gateway-Auth:${GATEWAY_SECRET}
 
   - name: coupon-service
     url: http://coupon-service:3008
@@ -238,7 +238,7 @@ services:
         config:
           add:
             headers:
-              - X-Gateway-Auth:KONG_INTERNAL_SECRET_2024
+              - X-Gateway-Auth:${GATEWAY_SECRET}
 
 # ==================== GLOBAL PLUGINS ====================
 
@@ -304,7 +304,7 @@ consumers:
     jwt_secrets:
       - key: e-commerce-issuer
         algorithm: HS256
-        secret: your-super-secret-jwt-key-change-in-production
+        secret: ${JWT_SECRET}
         
   - username: anonymous
     custom_id: anonymous-user

@@ -1,7 +1,7 @@
 import AnalyticsEvent from "../models/analyticsEvent.model.js";
 import { orderServiceClient, productServiceClient } from "../lib/serviceClients.js";
 
-// Get dashboard analytics (Story 8.1)
+// Get dashboard analytics 
 export const getDashboardAnalytics = async (req, res) => {
 	try {
 		// Aggregate data from events

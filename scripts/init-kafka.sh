@@ -15,7 +15,7 @@ kafka-topics --create \
   --if-not-exists \
   --config retention.ms=604800000
 
-echo "✓ Created topic: email-tasks (3 partitions, 7 days retention)"
+echo " Created topic: email-tasks (3 partitions, 7 days retention)"
 
 # Create notification-tasks topic (2 partitions, replication factor 1)
 kafka-topics --create \
@@ -26,7 +26,7 @@ kafka-topics --create \
   --if-not-exists \
   --config retention.ms=604800000
 
-echo "✓ Created topic: notification-tasks (2 partitions, 7 days retention)"
+echo " Created topic: notification-tasks (2 partitions, 7 days retention)"
 
 # Create analytics-events topic (4 partitions, replication factor 1)
 kafka-topics --create \
@@ -37,18 +37,29 @@ kafka-topics --create \
   --if-not-exists \
   --config retention.ms=2592000000
 
-echo "✓ Created topic: analytics-events (4 partitions, 30 days retention)"
+echo " Created topic: analytics-events (4 partitions, 30 days retention)"
 
-# Create payment-events topic (2 partitions, replication factor 1)
+# Create payment-events topic (1 partition for guaranteed ordering)
 kafka-topics --create \
   --bootstrap-server kafka:29092 \
   --topic payment-events \
-  --partitions 2 \
+  --partitions 1 \
   --replication-factor 1 \
   --if-not-exists \
   --config retention.ms=604800000
 
-echo "✓ Created topic: payment-events (2 partitions, 7 days retention)"
+echo " Created topic: payment-events (1 partition, 7 days retention)"
+
+# Create order-events topic (1 partition for guaranteed ordering)
+kafka-topics --create \
+  --bootstrap-server kafka:29092 \
+  --topic order-events \
+  --partitions 1 \
+  --replication-factor 1 \
+  --if-not-exists \
+  --config retention.ms=604800000
+
+echo " Created topic: order-events (1 partition, 7 days retention)"
 
 echo ""
 echo "All Kafka topics created successfully!"

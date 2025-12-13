@@ -41,7 +41,7 @@ export const connectKafkaConsumers = async () => {
 					await processEmailTask(event);
 				} catch (error) {
 					console.error("Error processing email task:", error);
-					// Don't throw - let consumer continue
+					
 				}
 			},
 		});

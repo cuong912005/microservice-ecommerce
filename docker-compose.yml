@@ -1,7 +1,7 @@
 ﻿version: '3.8'
 
 services:
-  # ==================== INFRASTRUCTURE SERVICES ====================
+  # INFRASTRUCTURE SERVICES 
   
   mongodb:
     image: mongo:7
@@ -35,7 +35,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Kafka - Message Broker for Event Streaming
+  # Kafka & Zookeeper
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -80,7 +80,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # Kafka UI - Web interface for Kafka management
+  # Kafka UI 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
@@ -110,7 +110,7 @@ services:
       - microservices-network
     restart: on-failure
 
-  # ==================== MONITORING ====================
+  # MONITORING 
   
   prometheus:
     image: prom/prometheus:latest
@@ -142,7 +142,7 @@ services:
     depends_on:
       - prometheus
 
-  # ==================== API GATEWAY ====================
+  #  API GATEWAY 
   
   # Kong Database (PostgreSQL)
   kong-database:
@@ -214,7 +214,7 @@ services:
       retries: 5
     restart: on-failure
 
-  # ==================== MICROSERVICES ====================
+  #  MICROSERVICES
   
   # Auth Service - Xác thực người dùng
   auth-service:
@@ -395,7 +395,7 @@ services:
       - ./services/analytics-service:/app
       - /app/node_modules
 
-  # ==================== BACKGROUND WORKER ====================
+  #  BACKGROUND WORKER 
   
   # Worker Service - Xử lý async tasks (email, notifications, etc.)
   worker-service:
@@ -421,12 +421,12 @@ services:
       - ./services/worker-service:/app
       - /app/node_modules
 
-# ==================== NETWORKS ====================
+#  NETWORKS 
 networks:
   microservices-network:
     driver: bridge
 
-# ==================== VOLUMES ====================
+#  VOLUMES 
 volumes:
   mongo-data:
   redis-data:

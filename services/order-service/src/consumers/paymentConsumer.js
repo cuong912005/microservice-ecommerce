@@ -1,6 +1,7 @@
 
 import Order from "../models/order.model.js";
-import { clearCartInternal } from "../lib/serviceClients.js";
+import { publishEvent } from "../lib/kafka.js";
+import { v4 as uuidv4 } from "uuid";
 
 // Process payment event
 export const processPaymentEvent = async (event) => {
@@ -61,14 +62,24 @@ async function handlePaymentStatusUpdate(payload) {
 				order.addStatusChange("processing", "Payment received, order is being processed");
 			}
 
-			// Clear cart after successful payment (internal service call)
+			// Publish order-completed event for Cart & Analytics services
 			try {
-				await clearCartInternal(userId);
-				console.log(`Cart cleared for user ${userId} after successful payment`);
-			} catch (clearError) {
-				console.error("Failed to clear cart after payment:", clearError.message);
-				// Don't fail the payment update if cart clear fails
-				// Cart will remain but order is completed
+				await publishEvent("order-events", {
+					eventId: uuidv4(),
+					eventType: "order-completed",
+					timestamp: new Date().toISOString(),
+					payload: {
+						orderId: order._id.toString(),
+						userId,
+						totalAmount: order.totalAmount,
+						products: order.products,
+						paymentStatus: "paid",
+					},
+				});
+				console.log(`Order completed event published for user ${userId}`);
+			} catch (eventError) {
+				console.error("Failed to publish order-completed event:", eventError.message);
+				// Don't fail the payment update if event publish fails
 			}
 		} else if (status === "failed") {
 			order.paymentStatus = "failed";

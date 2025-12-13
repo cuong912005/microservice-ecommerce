@@ -1,6 +1,6 @@
 import Notification from "../models/notification.model.js";
 
-// Get user notifications (Story 7.2)
+// Get user notifications 
 export const getUserNotifications = async (req, res) => {
 	try {
 		const { userId } = req.params;

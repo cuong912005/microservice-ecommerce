@@ -8,7 +8,7 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # Microservices monitoring (if they expose metrics)
+  # Microservices monitoring 
   - job_name: 'auth-service'
     static_configs:
       - targets: ['auth-service:3001']
